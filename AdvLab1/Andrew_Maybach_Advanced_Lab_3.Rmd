@@ -1,0 +1,329 @@
+---
+title: "Advanced Lab 1 (Advanced Lab 3)"
+output:
+  html_document:
+    df_print: paged
+  html_notebook: default
+  pdf_document: default
+Author: Andrew Maybach
+---
+
+
+
+```{r Package}
+library(igraph)
+library(dplyr)
+```
+
+```{r I/O}
+
+df1 = "C:/Users/amayb/Desktop/School/Fall 2018/IDS 564- Social Media & Network Analysis/AdvLab1/CollabNetEdgeListFilteredDec7_2012.csv"
+df2  = "C:/Users/amayb/Desktop/School/Fall 2018/IDS 564- Social Media & Network Analysis/AdvLab1/NodesNetList_corrected_Feb19_2016.csv"
+
+net_nodes = read.csv(df1,header = TRUE, sep= ",")
+attrs = read.csv(df2,header = TRUE, sep= ",")
+
+```
+
+```{r graph}
+
+net = graph.data.frame(net_nodes, directed = FALSE, vertices= NULL)
+
+```
+
+```{r Network stats, eval=FALSE, include=FALSE}
+
+is.simple(net)
+is.connected(net)
+
+```
+
+
+```{r Network Stats 2, include=FALSE}
+
+simple_net = simplify(net)
+mean(degree(simple_net))
+ecount(simple_net)
+vcount(simple_net)
+```
+The simplified network has an average degree of 2.81 with 52067 edges and 37051 nodes
+
+```{r Simple Plot, echo=FALSE}
+
+plot(simple_net,vertex.label = NA,vertex.size = 2, main= "Initial Simplified SAP")
+
+```
+#Inital SAP Community Analysis and Description
+
+The above plot is a visualization of the sub-network of the SAP online knowledge community. From the initial imaging, one can see that there is what appears to be an inner core componet that is ringed by another componet. It is possible that the inner component is comprised of those individuals who tend to be the "knowledge holders" and typically answer questions much more heavily than those individuals who comprise the outer ring. These individuals in the outer ring could potentially be more inexperienced members who come to the SAP Online Community in order to ask questions and learn or are those individuals who use SAP products sparingly.
+
+```{r Community Detection Algos}
+
+fast_greedy = cluster_fast_greedy(simple_net)
+walktrap = cluster_walktrap(simple_net)
+
+```
+
+```{r Fast Greedy, echo=FALSE}
+
+plot(fast_greedy,simple_net,vertex.label = NA,vertex.size = 2, main= "Fast Greedy Communities")
+
+```
+```{r Walk Trap, echo=FALSE}
+
+plot(walktrap,simple_net,vertex.label = NA,vertex.size = 2, main= "Walk Trap Communities")
+
+```
+
+
+```{r Number of communities, eval=FALSE, include=FALSE}
+
+length(fast_greedy)
+length(walktrap)
+
+```
+There are 2831 communities in the SAP Network when detected by the fast greedy algorithm and 5668 when detected by Walktrap
+
+###Top Fast Trap Community Names and Sizes
+```{r fastrap  top communities, echo=FALSE}
+
+#subsetting based on community membership
+top_coms_fast_greedy = sort(sizes(fast_greedy),decreasing = T)[0:3]
+top_coms_fast_greedy
+```
+
+```{r include=FALSE}
+top_coms_fast_greedy_label = c(8, 11,7)
+top_members_fast_greedy = fast_greedy$membership %in% top_coms_fast_greedy_label 
+top_sub_fast_greedy = induced.subgraph(simple_net,top_members_fast_greedy)
+```
+
+###Bottom Fast Trap Community Names and Sizes
+
+```{r echo=FALSE}
+bottom_coms_fast_greedy = sort(sizes(fast_greedy),decreasing = F)[0:3]
+bottom_coms_fast_greedy
+```
+
+
+```{r include=FALSE}
+bottom_coms_fast_greedy_label = c(718,719,720)
+bottom_members_fast_greedy = fast_greedy$membership %in% bottom_coms_fast_greedy_label
+bottom_sub_fast_greedy = induced.subgraph(simple_net,bottom_members_fast_greedy)
+```
+
+
+
+
+###Top Walktrap Community Names and Sizes
+
+```{r walktrap top communities, echo=FALSE}
+
+#subsetting based on community membership
+top_coms_walktrap = sort(sizes(walktrap),decreasing = T)[0:3]
+top_coms_walktrap
+```
+
+```{r include=FALSE}
+top_coms_walktrap_label = c(1,3,25)
+top_members_walktrap = walktrap$membership %in% top_coms_walktrap_label
+top_sub_walktrap = induced.subgraph(simple_net,top_members_walktrap)
+```
+
+###Bottom Walktrap Community Names and Sizes
+
+
+```{r echo=FALSE}
+bottom_coms_walktrap = sort(sizes(walktrap),decreasing = F)[0:3]
+bottom_coms_walktrap
+```
+
+```{r include=FALSE}
+bottom_coms_walktrap_label = c(1303,1304,1305)
+bottom_members_walktrap = walktrap$membership %in% bottom_coms_walktrap_label
+bottom_sub_walktrap = induced.subgraph(simple_net,bottom_members_walktrap)
+```
+
+
+
+```{r Plot of top  subgraph, echo=FALSE}
+
+plot(top_sub_fast_greedy, vertex.label = NA, vertex.size = 2,vertex.color = 'red', main= "Top Three largest Communities Fast Greedy")
+plot(top_sub_walktrap, vertex.label = NA, vertex.size = 2,vertex.color = 'red', main= "Top Three largest Communities Walktrap")
+
+```
+
+```{r Plot of bottom  subgraph, echo=FALSE}
+
+plot(bottom_sub_fast_greedy, vertex.label = NA, vertex.size = 2,vertex.color = 'blue', main= "Bottom Three Smallest Communities Fast Greedy")
+plot(bottom_sub_walktrap, vertex.label = NA, vertex.size = 2,vertex.color = 'blue', main= "Bottom Three Smallest Communities Walktrap")
+
+```
+
+```{r Plotting with top 3 and bottom 3 fast greedy, echo=FALSE}
+
+#changing colors to highlight top and bottom communities
+V(simple_net)$color = 'yellow'
+V(simple_net)[which(top_members_fast_greedy)]$color = 'red'
+V(simple_net)[which(top_members_fast_greedy)]$size = 2
+V(simple_net)$size  =2
+V(simple_net)[which(bottom_members_fast_greedy)]$color = 'blue'
+V(simple_net)[which(bottom_members_fast_greedy)]$size = 5
+
+
+plot(simple_net,vertex.label = NA,vertex.size = V(simple_net)$size, main= "Top Three and Bottom Three Communities Fast Greedy")
+legend("bottomright", legend = c("Top","Bottom"),fill=c("red","blue"))
+
+```
+
+
+```{r Plotting with top 3 and bottom 3 walktrap, echo=FALSE}
+
+#changing colors to highlight top and bottom communities
+V(simple_net)$color = 'yellow'
+V(simple_net)[which(top_members_walktrap)]$color = 'red'
+V(simple_net)[which(top_members_walktrap)]$size = 2
+V(simple_net)$size  =2
+V(simple_net)[which(bottom_members_walktrap)]$color = 'blue'
+V(simple_net)[which(bottom_members_walktrap)]$size = 10
+
+
+plot(simple_net,vertex.label = NA,vertex.size = V(simple_net)$size, main= "Top Three and Bottom Three Communities Walktrap")
+legend("bottomright", legend = c("Top","Bottom"),fill=c("red","blue"))
+
+```
+
+
+```{r Fast top community initial observations, include=FALSE}
+
+sum(top_members_fast_greedy)/ length(fast_greedy$membership)*100 #shows percentage of users are in top communities
+3/length(fast_greedy)*100 #shows what percentage 3 communties constitutes
+```
+
+```{r Walktrap top community initial observations, include=FALSE}
+sum(top_members_walktrap)/ length(walktrap$membership)*100 #shows percentage of users are in top communities
+3/length(walktrap)*100 #shows what percentage 3 communties constitutes
+```
+
+# Top Community Observations
+
+Here we can see that our assumptions about the shape of the communities is true,  a majority of of the communties (those that are the top 3 out of 2831) are densely located in the center of the network; .1% of communities consist of 69% of members. 
+
+These general observations hold true for the walktrap algorithm as well. 34% of members were represented by .05% of communities. It is interesting to note that with the walktrap algorithm, the bottom ten communities are no longer in the outer ring of the network but are found to be clustered together in the center component.
+
+```{r subsetting attributes}
+ 
+top_attrs_fast_greedy = attrs[top_members_fast_greedy,]
+bottom_attrs_fast_greedy = attrs[bottom_members_fast_greedy,]
+
+top_attrs_walktrap = attrs[top_members_walktrap,]
+bottom_attrs_walktrap = attrs[bottom_members_walktrap,]
+
+```
+###Initial Attributes 
+```{r attributes}
+summary(attrs)
+```
+#Initial Network Attribute Observations
+
+It is worth noting that both the USA and India consitute a large majority of the cumulative network use and this will be reflected in subsequent community detection. 
+
+###Top Attributes for Fast Greedy
+```{r Top community Attributes fast greedy}
+
+summary(top_attrs_fast_greedy)
+
+```
+###Top Attributes for Walktrap
+```{r Top community Attributes walktrap}
+
+summary(top_attrs_walktrap)
+
+```
+###Bottom Attributes for Fast Greedy
+```{r bottom community Attributes fast greedy}
+
+summary(bottom_attrs_fast_greedy)
+
+```
+###Bottom Attributes for Walktrap
+```{r Bottom community Attributes walktrap}
+
+summary(bottom_attrs_walktrap)
+
+```
+
+
+# Top and Bottom Communities
+
+After observing the descriptive statistics for both the top and bottom 3 communities detected by the Fast greedy and walktrap algorithms, it is clear that there are some differences between the two. The most notable being their differences in average ln_points. The top communities for both algorithms have remarkably higher average points scores (2.1 vs 1.8 and 1.6), suggesting that these communities are offering a larger ammount of knowledge gain to the network. Both algorithms have a similar makeup for the top communities in all other algorithm dimensions, which mirror the full sub-network break down. EG most users are from India and the USA, average internet user percent is ~43, good import percent is ~11, etc. 
+
+The bottom 3 communities are also much, much smaller than the top 3 communities in either algorithm.
+
+
+
+```{r Merge attributes and membership}
+
+fast_membership_df = data.frame("membership" =fast_greedy$membership, "Id" = fast_greedy$names)
+
+fast_df = merge(attrs,fast_membership_df,by= "Id")
+
+```
+
+
+```{r}
+#discovering the communities that contribute the most points for fast greedy by aggregating sum of points for commmunity
+fast_ag = aggregate(ln_points~membership,fast_df, sum)
+fast_order_ag = fast_ag[order(-fast_ag$ln_points),]
+fast_order_ag[0:3,] #showing top 3
+```
+The communities that contribute the most points are also the largest communities in the fast greedy detection method
+
+###Aggregations for Top Fast Greedy Community
+```{r Country breakdown fast greedy}
+
+#looking at top community and aggregating by country for points
+top_fast_greedy_community = fast_df[fast_df$membership==8,]
+top_fast_greedy_community %>% group_by(country)%>%summarise(Average_points = mean(ln_points),
+                                                            Member_count=length(country),
+                                                            Average_Internet = mean(internet_users_percent),
+                                                            Goods_Import=mean(ICT_goods_import_percent))%>% arrange(-Member_count,-Average_points)
+
+```
+#Fast Greedy Breakdown
+
+Above is the break down of the top community in terms of ln_points added, ordered first by member count and then average points.  India and the United States are the two top contributors. Generally countries with higher average internet usage tend to contribute more points.This makes sense as internet usage implies ability to contribute to an online forum. One interesting exception is found in India, where India is a top contributor with a low average internet use percentage. This could however could be a product of the size of India's population.
+```{r}
+walk_membership_df = data.frame("membership" = walktrap$membership, "Id" = walktrap$names)
+
+walk_df = merge(attrs,walk_membership_df,by= "Id")
+```
+
+
+```{r}
+#discovering the communities that contribute the most points for fast greedy by aggregating sum of points for commmunity
+walk_ag = aggregate(ln_points~membership,walk_df, sum)
+walk_order_ag = walk_ag[order(-walk_ag$ln_points),]
+walk_order_ag[0:3,] #showing top 3
+```
+The largest communites in the walktrap algorithm are also contributing the most points.
+
+###Aggregations for Top Walktrap Community
+```{r}
+#looking at top community and aggregating by country for points
+top_walktrap_community = walk_df[walk_df$membership==1,]
+top_walktrap_community %>% group_by(country)%>%summarise(Average_points = mean(ln_points),
+                                                            Member_count=length(country),
+                                                            Average_Internet = mean(internet_users_percent),
+                                                            Goods_Import=mean(ICT_goods_import_percent))%>% arrange(-Member_count,-Average_points)
+
+```
+#Walktrap Breakdown
+The Walktrap algorithm when broken down by member count and average points reveals similar results to the fast greedy algorithm. The general trend of countries with higher average internet usage contributing more points is still present, with the exception of largest demographic, India, having a low average internet usage and a high member count and point contribution.
+
+
+# Possible Outcomes
+
+Analysis of SAP network data can be useful to SAP in expanding and improving their business. It would be wise to recruit members from the top communities who have a relatively large point contribution and are from a country that does not have a high member count. By recruiting these members as possible employees not only would SAP be able to ensure their network would be connected and growing in new places, but that the individuals would be somewhat of an authority in the world of SAP, ln_points could be seen almost a pre-interview screening. 
+
+In similar fashion, by examining average internet use in conjunction with average point and member count, SAP could further target countries to expand; holding other attributes constant, higher average internet use would imply larger possible network and thus be seen as more ideal candidate countries for expansion.

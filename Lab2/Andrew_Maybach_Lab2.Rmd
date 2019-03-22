@@ -1,0 +1,159 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+Lab 2 
+Andrew Maybach
+
+Package used
+```{r Packages}
+library(igraph)
+```
+Reading in the file
+```{r I/O}
+dat = read.csv("C:/Users/amayb/Desktop/School/Fall 2018/IDS 564- Social Media & Network Analysis/Lab2/MergerNet_Jan21_2016_forR.csv")
+
+```
+Setting up the graph
+```{r Graph}
+graph = graph.data.frame(dat, directed = TRUE, vertices= NULL)
+# List of all the years represented in the set
+#dat[,"year"]
+df <-data.frame(dat)
+
+```
+Stats and answers to problem 1.
+```{r Desc and Problem 1}
+#brief explanation of dataframe
+str(df)
+#edges
+ecount(graph)
+# Vertices
+vcount(graph)
+
+```
+First Plot
+```{r Original Plot}
+
+plot(graph)
+```
+Is the graph a simple graph?
+
+```{r Simple?}
+
+is.simple(graph)
+
+```
+Making a simple graph and inspection for problem 2
+```{r Simplified graph and simplified with weight}
+graph_simpl<-simplify(graph)
+
+#E(graph_simpl)$weight 
+# Will use the inverse of log weight for shortest path calculations
+
+inv_weight<-1/log(E(graph)$weight  + 1)
+num_weight<-E(graph)$weight 
+
+head(inv_weight)
+#length(inv_weight)
+
+plot(graph_simpl)
+```
+Sub graph
+```{r Sub- Network}
+sub_net = induced.subgraph(graph_simpl, v=c('511', '541',
+'518', '519', '517', '325', '423', '446', '512', '523',
+'561', '621', '115', '482', '485', '487', '491', '492',
+'521', '712' ))
+
+
+special_nodes = c('511','541','518','519')
+```
+Problem 3
+
+
+```{r Problem 3}
+graph_simpl_2= graph_simpl
+graph_simpl_2$weight = inv_weight
+diameter(graph_simpl_2)
+
+```
+Problem 4
+
+```{r Problem 4}
+inv_weight2<-1/log(E(graph_simpl)$weight  + 1)
+num_weight2<-E(graph_simpl)$weight 
+
+
+btw = betweenness(graph_simpl,directed = TRUE,weights = inv_weight2,normalized = TRUE,nobigint = TRUE)
+#btw[special_nodes]
+
+```
+Problem 5
+
+```{r Problem 5}
+closeness(graph_simpl,V(graph_simpl)[special_nodes],mode= c('out'), weights = num_weight2, normalized=FALSE)
+
+```
+Problem 6
+```{r Problem 6}
+closeness(graph_simpl,V(graph_simpl)[special_nodes],mode= c('in'), weights = num_weight2, normalized=FALSE)
+
+```
+Problem 7
+```{r Problem 7}
+transitivity(graph)
+#transitivity(graph, type= 'average') 
+#mean(transitivity(graph, type= 'local'))
+#fixed per the quiz update
+```
+Problem 8
+```{r Problem 8}
+dists = shortest.paths(graph_simpl, V(graph_simpl),V(graph_simpl),
+  weights = inv_weight2)
+dists[special_nodes,'814']
+```
+Problem 9
+```{r Problem 9}
+dists2 = shortest.paths(graph_simpl, V(graph_simpl),V(graph_simpl),
+  weights = inv_weight2)
+dists2['711',special_nodes]
+#do not like the answers given here when compared to the quiz options
+```
+
+Problem 10
+```{r Problem 10}
+sub_net2 = induced.subgraph(graph_simpl_2, v=c('511', '541',
+'518', '519', '517', '325', '423', '446', '512', '523',
+'561', '621', '115', '482', '485', '487', '491', '492',
+'521', '712' ))
+diameter(sub_net2)
+#do not like the answer that is given here when compared to the answers possible in the quiz
+```
+ Below are the parameters used to generate the sub network with varying specifications per the assignment
+
+```{r Plotting Parms}
+log_weights = log(E(sub_net)$weight) 
+layout = layout_with_fr(sub_net)
+node_size = sqrt(degree(sub_net))
+
+V(sub_net)$color ='yellow'
+V(sub_net)[special_nodes]$color = 'red'
+```
+
+
+```{r Plot}
+png('plot.png',width = 1200,height = 1200)
+
+plot(sub_net,main= "Special Nodes" ,
+     layout=layout,
+     vertex.size = node_size,
+     edge.width = log_weights)
+```
+
+
+
+
+
+
